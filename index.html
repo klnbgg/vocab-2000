@@ -323,19 +323,6 @@ input { font-family: inherit; }
   color: var(--muted);
   margin-bottom: 6px;
 }
-.api-result { margin-bottom: 10px; }
-.api-meaning {
-  margin-bottom: 8px;
-  padding-left: 12px;
-  border-left: 2px solid var(--primary-light);
-}
-.api-pos { font-weight: 600; color: var(--primary); font-size: .82rem; }
-.api-def { color: var(--ink-soft); margin: 3px 0; }
-.api-example { color: var(--muted); font-style: italic; font-size: .82rem; margin: 2px 0 2px 12px; }
-.api-synonyms { font-size: .8rem; color: var(--muted); margin-top: 3px; }
-.api-synonyms span { color: var(--primary); }
-.api-loading { color: var(--muted); font-size: .85rem; padding: 8px 0; }
-.api-error { color: var(--unknown); font-size: .82rem; }
 .external-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .ext-link {
   font-size: .78rem;
@@ -347,15 +334,6 @@ input { font-family: inherit; }
   transition: background .15s;
 }
 .ext-link:hover { background: var(--primary-light); color: var(--primary); }
-.btn-api-load {
-  font-size: .82rem;
-  padding: 5px 12px;
-  border-radius: 4px;
-  background: var(--primary);
-  color: #fff;
-  transition: background .15s;
-}
-.btn-api-load:hover { background: var(--primary-dark); }
 .btn-remove-mark {
   font-size: .78rem;
   padding: 4px 10px;
@@ -548,8 +526,7 @@ const state = {
   search: '',
   filter: 'all',
   marks: loadMarks(),
-  expanded: new Set(),
-  apiCache: {}
+  expanded: new Set()
 };
 
 // ===== Persistence =====
@@ -736,15 +713,8 @@ function wordCardHTML(w) {
 }
 
 function buildDetailContent(w) {
-  let html = '<h4>详细释义与用法</h4>';
-  html += '<div class="api-result" id="api-' + w.id + '">';
-  if (state.apiCache[w.w]) {
-    html += renderAPIResult(state.apiCache[w.w]);
-  } else {
-    html += '<button class="btn-api-load" onclick="loadAPI(' + w.id + ',\'' + escAttr(w.w) + '\')">加载英文释义、例句与近义词</button>';
-    html += '<div id="api-load-' + w.id + '"></div>';
-  }
-  html += '</div>';
+  let html = '<h4>外部词典</h4>';
+  html += '<p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">点击在新标签页打开，查看完整释义、例句与用法：</p>';
   html += '<div class="external-links">';
   html += '<a class="ext-link" href="https://dict.youdao.com/w/eng/' + encodeURIComponent(w.w) + '" target="_blank" rel="noopener">有道词典</a>';
   html += '<a class="ext-link" href="https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w.w) + '" target="_blank" rel="noopener">Cambridge</a>';
@@ -755,50 +725,6 @@ function buildDetailContent(w) {
     html += '<div style="margin-top:10px"><button class="btn-remove-mark" onclick="removeMark(' + w.id + ')">移出复习本</button></div>';
   }
   return html;
-}
-
-function renderAPIResult(data) {
-  if (!data || !Array.isArray(data) || !data.length) return '<span class="api-error">未找到释义</span>';
-  let html = '';
-  const entry = data[0];
-  if (entry.phonetics && entry.phonetics.length) {
-    const ph = entry.phonetics.find(p => p.text) || entry.phonetics[0];
-    if (ph && ph.text) {
-      html += '<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">英/美音标: ' + escHTML(ph.text) + '</div>';
-    }
-  }
-  (entry.meanings || []).slice(0, 4).forEach(m => {
-    html += '<div class="api-meaning">';
-    html += '<div class="api-pos">' + escHTML(m.partOfSpeech || '') + '</div>';
-    (m.definitions || []).slice(0, 2).forEach(d => {
-      html += '<div class="api-def">' + escHTML(d.definition || '') + '</div>';
-      if (d.example) html += '<div class="api-example">"' + escHTML(d.example) + '"</div>';
-    });
-    if (m.synonyms && m.synonyms.length) {
-      html += '<div class="api-synonyms">近义词: <span>' + m.synonyms.slice(0, 6).map(escHTML).join(', ') + '</span></div>';
-    }
-    if (m.antonyms && m.antonyms.length) {
-      html += '<div class="api-synonyms">反义词: <span>' + m.antonyms.slice(0, 4).map(escHTML).join(', ') + '</span></div>';
-    }
-    html += '</div>';
-  });
-  return html;
-}
-
-async function loadAPI(id, word) {
-  const container = document.getElementById('api-load-' + id);
-  if (!container) return;
-  container.innerHTML = '<div class="api-loading">正在加载…</div>';
-  try {
-    const resp = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
-    if (!resp.ok) throw new Error('not found');
-    const data = await resp.json();
-    state.apiCache[word] = data;
-    const panel = document.getElementById('api-' + id);
-    if (panel) panel.innerHTML = renderAPIResult(data);
-  } catch (e) {
-    container.innerHTML = '<div class="api-error">加载失败，可点击下方链接查看外部词典</div>';
-  }
 }
 
 function toggleExpand(id) {
