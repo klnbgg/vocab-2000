@@ -700,14 +700,30 @@ function importData(file) {
 }
 
 // ===== Speech =====
+let currentAudio = null;
 function speak(word) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(word);
-    u.lang = 'en-US';
-    u.rate = 0.85;
-    window.speechSynthesis.speak(u);
-  }
+  // Stop any currently playing audio
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+  // Primary: Youdao online pronunciation (works on all devices including mobile)
+  const audio = new Audio('https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(word) + '&type=1');
+  currentAudio = audio;
+  audio.play().catch(() => {
+    // Fallback: browser TTS
+    if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US';
+      u.rate = 0.85;
+      // Try to select an English voice
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice = voices.find(v => v.lang.startsWith('en'));
+      if (enVoice) u.voice = enVoice;
+      window.speechSynthesis.speak(u);
+    } else {
+      toast('当前浏览器不支持发音，请点击外部词典链接听发音');
+    }
+  });
 }
 
 // ===== Toast =====
