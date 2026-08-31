@@ -404,6 +404,39 @@ input { font-family: inherit; }
 .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .page-btn:disabled { opacity: .4; cursor: not-allowed; }
 .page-info { font-size: .85rem; color: var(--muted); padding: 0 10px; }
+.page-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 8px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+.page-jump input {
+  width: 56px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: .88rem;
+  text-align: center;
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s;
+}
+.page-jump input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,118,110,.1); }
+.page-jump button {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: .85rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  transition: all .15s;
+}
+.page-jump button:hover { border-color: var(--primary); color: var(--primary); }
 
 /* ===== Review View ===== */
 .review-section { margin-bottom: 32px; }
@@ -913,6 +946,7 @@ function renderPagination(totalPages) {
   });
   html += '<button class="page-btn" onclick="goPage(' + (state.page + 1) + ')" ' + (state.page === totalPages ? 'disabled' : '') + '>下一页</button>';
   html += '<span class="page-info">' + state.page + ' / ' + totalPages + '</span>';
+  html += '<span class="page-jump">跳至 <input type="number" min="1" max="' + totalPages + '" id="pageJumpInput" onkeydown="if(event.key===\'Enter\')jumpToPage(' + totalPages + ')"> <button onclick="jumpToPage(' + totalPages + ')">GO</button></span>';
   el.innerHTML = html;
 }
 
@@ -920,6 +954,16 @@ function goPage(p) {
   state.page = p;
   renderList();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function jumpToPage(totalPages) {
+  const input = document.getElementById('pageJumpInput');
+  if (!input) return;
+  let p = parseInt(input.value, 10);
+  if (isNaN(p)) { toast('请输入页码'); return; }
+  if (p < 1) p = 1;
+  if (p > totalPages) p = totalPages;
+  goPage(p);
 }
 
 // ===== Render Review =====
